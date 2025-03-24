@@ -16,6 +16,7 @@ class Layer():
         self.num_neurons = num_neurons
         self.prev_layer = prev_layer
         self.biases = np.zeros((self.num_neurons, 1))
+        self.training = None
     
         if self.prev_layer:
             self.prev_layer.next_layer = self
@@ -153,12 +154,15 @@ class OutputLayer(Layer):
         return self.prev_layer.backward(dA_prev)
 
 class BatchNormLayer(Layer):
-    def __init__(self, num_neurons=1, prev_layer=None, activation = False, init_weights = False, activation_function = None, init_method = None):
+    def __init__(self, num_neurons=1, prev_layer=None, activation = False, init_weights = False, activation_function = None, init_method = None, momentum = 0.9, eps=1e-5):
         super().__init__(num_neurons=num_neurons, prev_layer=prev_layer, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
         self._gamma = np.ones(num_neurons,)
         self._beta = np.zeros(num_neurons,)
         self._running_mean = np.zeros(num_neurons,)
         self._running_var = np.ones(num_neurons,)
+        self._momentum = momentum
+        self.eps = eps
+        
     
     def linear(self) -> np.ndarray:
         self.A_prev = self.prev_layer.activate() # Storing previous layer's activation ouput for backprop
@@ -169,12 +173,36 @@ class BatchNormLayer(Layer):
     
     def batch_norm(self, Z, batch_size):
         eps = 1e-5
-        self.avg = np.mean(Z, axis=0)
-        self.var = np.var(Z, axis=0)
 
-        Z_norm = (Z - self.avg)/np.sqrt(self.var + eps)
+        if self.training:
+            self.avg = np.mean(Z, axis=0)
+            self.var = np.var(Z, axis=0)
 
-        return self._gamma*Z_norm + self._beta
+            self._running_mean = self._momentum * self._running_mean + (1 - self._momentum) * self.avg # Running mean and variance updated for inference
+            self._running_var = self._momentum * self._running_var + (1 - self._momentum) * self.var
+
+            self.Z_norm = (Z - self.avg)/np.sqrt(self.var + eps)
+        
+        else:
+            self.Z_norm = (Z - self.running_mean) / np.sqrt(self.running_var + self.eps) # Use running averages for inference
+
+        return self._gamma*self.Z_norm + self._beta
+    
+    def backward(self, dA):
+   
+        dZ_out = dA
+        m = dZ_out.shape[0]
+
+        self.dGamma = np.sum(dZ_out *self.Z_norm, axis=0)
+        self.dBeta = np.sum(dZ_out, axis=0)
+        dZ_norm = dZ_out*self._gamma
+
+        dVar = np.sum(dZ_norm * (self.Z - self.avg) * -0.5 / (self.var + self.eps)**1.5, axis=0)
+        dMean = np.sum(dZ_norm * -1 / np.sqrt(self.var + self.eps), axis=0) + dVar * np.mean(-2 * (self.Z - self.avg), axis=0)
+
+        dZ = dZ_norm / np.sqrt(self.var + self.eps) + dVar * 2 * (self.Z - self.avg) / m + dMean / m
+        
+        return self.prev_layer.backward(dZ)
 
 
 

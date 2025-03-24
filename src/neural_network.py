@@ -31,6 +31,9 @@ class NeuralNetwork():
         
     
     def fit(self, X:np.ndarray, y:np.ndarray, batch_size:int): ## Optimizers to be added later
+        for layer in self.layers:
+            layer.training = True
+
         for i in range(self.epochs):
             indices = np.arange(len(X))
             np.random.shuffle(indices)
@@ -60,7 +63,7 @@ class NeuralNetwork():
     def __compute_loss(self, y_pred:np.ndarray, y_true:np.ndarray, batch_size:int) -> float:
         return self._loss_func.compute_loss(y_pred, y_true, batch_size)
 
-    def __forward_pass(self) -> np.ndarray:
+    def __forward_pass(self, ) -> np.ndarray:
         return self.layers[-1].activate()
     
     def __backpropagate(self, y_pred:np.ndarray, y_true:np.ndarray) -> np.ndarray:
@@ -72,8 +75,14 @@ class NeuralNetwork():
             if hasattr(layer, "weights") and hasattr(layer, "dW"):
                 layer.weights -= self.eta * layer.dW
                 layer.biases -= self.eta * layer.db
+            
+            elif hasattr(layer, "_gamma") and hasattr(layer, "_beta"):
+                layer._gamma -= self.eta*layer.dGamma
+                layer._beta -= self.eta*layer.dBeta
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         self.layers[0].inputs = X
+        for layer in self.layers:
+            training = False
         return self.__forward_pass()
         
