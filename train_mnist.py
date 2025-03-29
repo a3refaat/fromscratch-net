@@ -30,6 +30,6 @@ if __name__ == "__main__":
     layers.append(layer4)
     layers.append(outputs)
     neural_net = NeuralNetwork(layers, epochs=100, eta=1e-3, loss_func="cross_entropy")
-    neural_net.fit(X_train, y_train, batch_size=32)
+    neural_net.fit(X_train, y_train, batch_size=32, X_val=X_test, y_val=y_test, plot_curves=True)
 
     

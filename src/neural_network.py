@@ -1,4 +1,6 @@
 import numpy as np
+from matplotlib import pyplot as plt
+plt.ion()
 
 from .losses import CrossEntropyLoss, MSELoss
 from .layers import Layer
@@ -28,11 +30,17 @@ class NeuralNetwork():
             raise ValueError(f"Invalid loss function: {loss_func}. Please select from {self.valid_loss_funcs}")
         else:
             self._loss_func = LOSS_MAP[loss_func]()
-        
     
-    def fit(self, X:np.ndarray, y:np.ndarray, batch_size:int): ## Optimizers to be added later
+    def __set_training(self, is_training:bool=True) -> None:
         for layer in self.layers:
-            layer.training = True
+            layer.training = is_training
+        return
+        
+    def fit(self, X:np.ndarray, y:np.ndarray, batch_size:int, X_val=None, y_val=None, plot_curves=False): ## Optimizers to be added later
+        self.train_losses = []
+        self.validation_losses = []
+
+        self.__set_training()
 
         for i in range(self.epochs):
             indices = np.arange(len(X))
@@ -43,25 +51,48 @@ class NeuralNetwork():
             batch_losses = []
             for j in range(0, len(X), batch_size):
 
-
                 X_set = X[j:j + batch_size]
                 y_set = y[j:j + batch_size]
                 self.layers[0].inputs = X_set
 
                 y_pred = self.__forward_pass()
-                loss = self.__compute_loss(y_pred, y_set, batch_size)
-                batch_losses.append(loss)
+                loss = self.__compute_loss(y_pred, y_set)
                 gradient = self.__backpropagate(y_pred, y_set)
+                batch_losses.append(loss)
                 self.__update_weights()
 
             epoch_loss = np.mean(batch_losses)
+            self.train_losses.append(epoch_loss)
             print(f"Epoch {i + 1}/{self.epochs} - Loss: {epoch_loss:.4f}")
 
+            if X_val.any() and y_val.any():
+                y_pred_val = self.predict(X_val)
+                val_loss = self.__compute_loss(y_pred_val, y_val)
+                self.validation_losses.append(val_loss)
+            
+            if plot_curves:
+                self.__plot_learning_curves()
+                
+
+        return
+    
+    def __plot_learning_curves(self):
+        plt.clf()
+        plt.plot(self.train_losses, label="Training Loss")
+
+        if self.validation_losses:
+            plt.plot(self.validation_losses, label="Validation Loss")
+
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Live Learning Curves")
+        plt.legend()
+        plt.pause(0.001)
 
         return
         
-    def __compute_loss(self, y_pred:np.ndarray, y_true:np.ndarray, batch_size:int) -> float:
-        return self._loss_func.compute_loss(y_pred, y_true, batch_size)
+    def __compute_loss(self, y_pred:np.ndarray, y_true:np.ndarray) -> float:
+        return self._loss_func.compute_loss(y_pred, y_true)
 
     def __forward_pass(self, ) -> np.ndarray:
         return self.layers[-1].activate()
@@ -82,7 +113,6 @@ class NeuralNetwork():
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         self.layers[0].inputs = X
-        for layer in self.layers:
-            training = False
+        self.__set_training(False)
         return self.__forward_pass()
         
