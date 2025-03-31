@@ -11,16 +11,14 @@ ACTIVATION_MAP = {
 }
 
 class Layer():
-    def __init__(self, num_neurons=1, prev_layer=None, activation:bool=False, init_weights:bool=False, activation_function:str=None, init_method:str=None):
+    def __init__(self, num_neurons=1, activation:bool=False, init_weights:bool=False, activation_function:str=None, init_method:str=None):
         self.valid_intializations = ["glorot", "he"]
         self.num_neurons = num_neurons
-        self.prev_layer = prev_layer
+        self.prev_layer = None
         self.biases = np.zeros((self.num_neurons, 1))
         self.training = None
+        self.built = False
     
-        if self.prev_layer:
-            self.prev_layer.next_layer = self
-        
         if activation:
             self.activation_function = activation_function
         
@@ -41,25 +39,31 @@ class Layer():
             self._activation_function = ACTIVATION_MAP[activation_function]()
         return
     
-    @property
-    def next_layer(self):
-        return self._next_layer
-    
-    @next_layer.setter
-    def next_layer(self, layer):
-        self._next_layer = layer
-
-        if self.prev_layer is None:
+    def build(self):
+        if self.built:
             return
         else:
             self.initialize_weights()
+            self.built = True
         return
+    
+    def infer_fan_in(self):
+        if isinstance(self.prev_layer, InputLayer):
+            if self.prev_layer.flatten:
+                if self.prev_layer.inputs is None:
+                    raise ValueError("InputLayer must have inputs set before initializing weights.")
+                fan_in = self.prev_layer.inputs.reshape(self.prev_layer.inputs.shape[0], -1).shape[1]
+            else:
+                fan_in = np.prod(self.prev_layer.input_shape)
+        else:
+            fan_in = self.prev_layer.num_neurons
+        
+        return fan_in
 
     def initialize_weights(self):
-        fan_in = self.prev_layer.num_neurons
+        fan_in = self.infer_fan_in()
         fan_out = self.num_neurons
         
-
         if self._init_method == "glorot":
             self.glorot_init(fan_in, fan_out)
         
@@ -115,26 +119,31 @@ class Layer():
 
         return self.prev_layer.backward(dA_prev)
 
-class InputLayer(Layer):
-    def __init__(self, input_shape:np.ndarray):
-        super().__init__(num_neurons=input_shape[0], activation=False, init_weights=False)
-        self.inputs = None
+class InputLayer:
+    def __init__(self, input_shape:np.ndarray, flatten=False):
+        self.inputs = None # Inputs are passed via neural network .fit()
         self.input_shape = input_shape
+        self.flatten = flatten
         
     def activate(self) -> np.ndarray:
-        return self.inputs.reshape(self.inputs.shape[0], -1)
+        if self.inputs is None:
+            raise ValueError("No inputs found in input layer.")
+
+        if self.flatten:
+            return self.inputs.reshape(self.inputs.shape[0], -1)
+        
+        return self.inputs
     
     def backward(self, dA):
         return dA
     
-
 class HiddenLayer(Layer):
-    def __init__(self, num_neurons, prev_layer, activation_function:str=None, init_method:str=None):
-        super().__init__(num_neurons=num_neurons, prev_layer=prev_layer, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
+    def __init__(self, num_neurons, activation_function:str=None, init_method:str=None):
+        super().__init__(num_neurons=num_neurons, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
         
 class OutputLayer(Layer):
-    def __init__(self, num_neurons, prev_layer, activation_function:str=None, init_method:str=None):
-        super().__init__(num_neurons=num_neurons, prev_layer=prev_layer, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
+    def __init__(self, num_neurons, activation_function:str=None, init_method:str=None):
+        super().__init__(num_neurons=num_neurons, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
         self.next_layer = None
     
     def backward(self, dA):

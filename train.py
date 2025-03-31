@@ -6,16 +6,15 @@ from visualize import NeuralNetworkVisualizer
 
 
 if __name__ == "__main__":
-    inputs = InputLayer(input_shape=[784,])
-    layer1 = HiddenLayer(50, prev_layer=inputs, activation_function="leaky_relu", init_method="he")
-    layer2 = HiddenLayer(50, prev_layer=layer1, activation_function="leaky_relu", init_method="he")
-    layer3 = HiddenLayer(50, prev_layer=layer2, activation_function="leaky_relu", init_method="he")
-    layer4 = HiddenLayer(50, prev_layer=layer3, activation_function="leaky_relu", init_method="he")
-    layer5 = HiddenLayer(50, prev_layer=layer4, activation_function="leaky_relu", init_method="he")
-    layer6 = HiddenLayer(50, prev_layer=layer5, activation_function="leaky_relu", init_method="he")
+    inputs = InputLayer(input_shape=[28, 28], flatten=True)
+    layer1 = HiddenLayer(50, activation_function="leaky_relu", init_method="he")
+    layer2 = HiddenLayer(50, activation_function="leaky_relu", init_method="he")
+    layer3 = HiddenLayer(50, activation_function="leaky_relu", init_method="he")
+    layer4 = HiddenLayer(50, activation_function="leaky_relu", init_method="he")
+    layer5 = HiddenLayer(50, activation_function="leaky_relu", init_method="he")
+    layer6 = HiddenLayer(50, activation_function="leaky_relu", init_method="he")
     
-    
-    outputs = OutputLayer(10, prev_layer=layer6, activation_function="softmax", init_method="he")
+    outputs = OutputLayer(10, activation_function="softmax", init_method="he")
     mnist = fetch_openml("mnist_784", version=1, parser='pandas')
 
     X = mnist.data.to_numpy()  # Convert to NumPy array

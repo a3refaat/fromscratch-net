@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 plt.ion()
 
 from .losses import CrossEntropyLoss, MSELoss
-from .layers import Layer
+from .layers import Layer, InputLayer, OutputLayer
 from .optimizers import SGD, Momentum
 
 LOSS_MAP = {
@@ -23,6 +23,22 @@ class NeuralNetwork():
         self.eta = eta
         self.loss_func = loss_func
         self.optimizer = optimizer
+        self.built = False
+        self.__link_layers()
+
+
+
+    def __link_layers(self):
+        for i, layer in enumerate(self.layers):
+            layer.prev_layer = self.layers[i - 1] if i > 0 else None
+            layer.next_layer = self.layers[i + 1] if i < len(self.layers) - 1 else None
+    
+    def __build_layers(self):
+        for layer in self.layers:
+            if hasattr(layer, "build"):
+                layer.build()
+        self.built = True
+        return
 
     @property
     def loss_func(self):
@@ -69,10 +85,11 @@ class NeuralNetwork():
 
             batch_losses = []
             for j in range(0, len(X), batch_size):
-
                 X_set = X[j:j + batch_size]
                 y_set = y[j:j + batch_size]
                 self.layers[0].inputs = X_set
+                if not self.built:
+                    self.__build_layers()
 
                 y_pred = self.__forward_pass()
                 loss = self.__compute_loss(y_pred, y_set)
