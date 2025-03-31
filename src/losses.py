@@ -19,9 +19,9 @@ class MSELoss(LossFunction):
 
 class CrossEntropyLoss(LossFunction):
 
-    def compute_loss(self, y_pred, y_true, batch_size):
+    def compute_loss(self, y_pred, y_true):
         eps = 1e-10
-        correct_probs = y_pred[np.arange(batch_size), y_true]
+        correct_probs = y_pred[np.arange(y_true.shape[0]), y_true]
         loss = -np.mean(np.log(correct_probs + eps))
         return loss
     

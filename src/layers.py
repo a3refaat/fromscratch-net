@@ -1,17 +1,17 @@
 import numpy as np
 import math
-from .activations import ReLU, Sigmoid, Softmax, Tanh
+from .activations import ReLU, Sigmoid, Softmax, Tanh, LeakyReLU
 
 
 ACTIVATION_MAP = {
     'relu': ReLU,
     'sigmoid': Sigmoid,
     'softmax': Softmax,
+    'leaky_relu': LeakyReLU
 }
 
 class Layer():
     def __init__(self, num_neurons=1, prev_layer=None, activation:bool=False, init_weights:bool=False, activation_function:str=None, init_method:str=None):
-        self.valid_activations = ["relu", "sigmoid", "softmax"]
         self.valid_intializations = ["glorot", "he"]
         self.num_neurons = num_neurons
         self.prev_layer = prev_layer
@@ -35,8 +35,8 @@ class Layer():
     def activation_function(self, activation_function:str) -> None:
         if activation_function is None:
             self._activation_function = ACTIVATION_MAP["relu"]()
-        elif activation_function not in self.valid_activations:
-            raise ValueError(f"Invalid activation function: {activation_function}. Please select from {self.valid_activations}")
+        elif activation_function not in ACTIVATION_MAP.keys():
+            raise ValueError(f"Invalid activation function: {activation_function}. Please select from {list(ACTIVATION_MAP.keys())}")
         else:
             self._activation_function = ACTIVATION_MAP[activation_function]()
         return
@@ -69,11 +69,11 @@ class Layer():
         return
     
     def glorot_init(self, fan_in, fan_out):
-        self.weights = np.random.randn(fan_in, fan_out)*math.sqrt(2/fan_in + fan_out)
+        self.weights = np.random.randn(fan_in, fan_out)*np.sqrt(2/fan_in + fan_out)
         return
     
     def he_init(self, fan_in, fan_out):
-        self.weights = np.random.randn(fan_in, fan_out)*math.sqrt(2/fan_in)
+        self.weights = np.random.randn(fan_in, fan_out)*np.sqrt(2/fan_in)
         return
         
     @property
@@ -184,7 +184,7 @@ class BatchNormLayer(Layer):
             self.Z_norm = (Z - self.avg)/np.sqrt(self.var + eps)
         
         else:
-            self.Z_norm = (Z - self.running_mean) / np.sqrt(self.running_var + self.eps) # Use running averages for inference
+            self.Z_norm = (Z - self._running_mean) / np.sqrt(self._running_var + self.eps) # Use running averages for inference
 
         return self._gamma*self.Z_norm + self._beta
     

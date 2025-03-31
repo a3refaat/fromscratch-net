@@ -46,3 +46,13 @@ class Tanh(Activation):
     def derivative(self, Z):
         t = np.tanh(Z)
         return 1 - t**2
+
+class LeakyReLU(Activation):
+    def __init__(self, alpha=0.01):
+        self.alpha = alpha
+
+    def __call__(self, Z):
+        return np.where(Z > 0, Z, self.alpha * Z) # If Z > 0, return Z, else, return alpha*Z
+
+    def derivative(self, Z):
+        return np.where(Z > 0, 1, self.alpha) # Via power rule

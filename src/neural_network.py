@@ -4,19 +4,25 @@ plt.ion()
 
 from .losses import CrossEntropyLoss, MSELoss
 from .layers import Layer
+from .optimizers import SGD, Momentum
 
 LOSS_MAP = {
     'cross_entropy': CrossEntropyLoss,
     'mse': MSELoss,
 }
 
+OPTIMIZER_MAP = {
+    'sgd': SGD,
+    'momentum': Momentum
+}
+
 class NeuralNetwork():
-    def __init__(self, layers:list[Layer], epochs:int, eta:float, loss_func=None):
+    def __init__(self, layers:list[Layer], epochs:int, eta:float, loss_func=None, optimizer=None):
         self.layers = layers
         self.epochs = epochs
         self.eta = eta
-        self.valid_loss_funcs = list(LOSS_MAP.keys())
         self.loss_func = loss_func
+        self.optimizer = optimizer
 
     @property
     def loss_func(self):
@@ -26,10 +32,23 @@ class NeuralNetwork():
     def loss_func(self, loss_func:str) -> None:
         if loss_func is None:
             self._loss_func = LOSS_MAP['mse']()
-        elif loss_func not in self.valid_loss_funcs:
-            raise ValueError(f"Invalid loss function: {loss_func}. Please select from {self.valid_loss_funcs}")
+        elif loss_func not in LOSS_MAP.keys():
+            raise ValueError(f"Invalid loss function: {loss_func}. Please select from {list(LOSS_MAP.keys())}")
         else:
             self._loss_func = LOSS_MAP[loss_func]()
+    
+    @property
+    def optimizer(self):
+        return self._optimizer
+    
+    @optimizer.setter
+    def optimizer(self, optimizer) -> None:
+        if optimizer is None:
+            self._optimizer = SGD(eta=self.eta)
+            ##FIX ME - ADD CHECK FOR INVALID OPTIMIZER
+        else:
+            self._optimizer = optimizer
+
     
     def __set_training(self, is_training:bool=True) -> None:
         for layer in self.layers:
@@ -73,7 +92,7 @@ class NeuralNetwork():
             if plot_curves:
                 self.__plot_learning_curves()
                 
-
+        plt.ioff()
         return
     
     def __plot_learning_curves(self):
@@ -94,7 +113,7 @@ class NeuralNetwork():
     def __compute_loss(self, y_pred:np.ndarray, y_true:np.ndarray) -> float:
         return self._loss_func.compute_loss(y_pred, y_true)
 
-    def __forward_pass(self, ) -> np.ndarray:
+    def __forward_pass(self) -> np.ndarray:
         return self.layers[-1].activate()
     
     def __backpropagate(self, y_pred:np.ndarray, y_true:np.ndarray) -> np.ndarray:
@@ -103,13 +122,7 @@ class NeuralNetwork():
     
     def __update_weights(self) -> None:
         for layer in self.layers:
-            if hasattr(layer, "weights") and hasattr(layer, "dW"):
-                layer.weights -= self.eta * layer.dW
-                layer.biases -= self.eta * layer.db
-            
-            elif hasattr(layer, "_gamma") and hasattr(layer, "_beta"):
-                layer._gamma -= self.eta*layer.dGamma
-                layer._beta -= self.eta*layer.dBeta
+            self._optimizer.update_weights(layer)
     
     def predict(self, X: np.ndarray) -> np.ndarray:
         self.layers[0].inputs = X
