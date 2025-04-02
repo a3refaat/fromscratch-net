@@ -4,7 +4,7 @@ plt.ion()
 
 from .losses import CrossEntropyLoss, MSELoss
 from .layers import Layer, InputLayer, OutputLayer
-from .optimizers import SGD, Momentum
+from .optimizers import SGD, Momentum, Adam
 
 LOSS_MAP = {
     'cross_entropy': CrossEntropyLoss,
@@ -13,7 +13,8 @@ LOSS_MAP = {
 
 OPTIMIZER_MAP = {
     'sgd': SGD,
-    'momentum': Momentum
+    'momentum': Momentum,
+    'adam' : Adam
 }
 
 class NeuralNetwork():
@@ -25,8 +26,6 @@ class NeuralNetwork():
         self.optimizer = optimizer
         self.built = False
         self.__link_layers()
-
-
 
     def __link_layers(self):
         for i, layer in enumerate(self.layers):

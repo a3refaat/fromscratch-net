@@ -1,5 +1,4 @@
 import numpy as np
-import math
 from .activations import ReLU, Sigmoid, Softmax, Tanh, LeakyReLU
 
 
@@ -163,8 +162,8 @@ class OutputLayer(Layer):
         return self.prev_layer.backward(dA_prev)
 
 class BatchNormLayer(Layer):
-    def __init__(self, num_neurons=1, prev_layer=None, activation = False, init_weights = False, activation_function = None, init_method = None, momentum = 0.9, eps=1e-5):
-        super().__init__(num_neurons=num_neurons, prev_layer=prev_layer, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
+    def __init__(self, num_neurons=1, activation = False, init_weights = False, activation_function = None, init_method = None, momentum = 0.9, eps=1e-5):
+        super().__init__(num_neurons=num_neurons, activation=True, init_weights=True, activation_function=activation_function, init_method=init_method)
         self._gamma = np.ones(num_neurons,)
         self._beta = np.zeros(num_neurons,)
         self._running_mean = np.zeros(num_neurons,)
