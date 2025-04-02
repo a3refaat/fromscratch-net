@@ -11,7 +11,7 @@ I plan to contribute to this architecture over time as a learning project. Long 
 - Activation functions: ReLU, Sigmoid, Softmax
 - Loss functions: Cross-Entropy, MSE
 - Batch training with gradient descent
-- Optimizers
+- Optimizers: SGD, Momentum, Adam
 - Learning Curve plots
 - Modular design (clean, extensible Python classes)
 - Glorot and He initialization
