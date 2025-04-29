@@ -1,4 +1,5 @@
 numpy
+cupy-cuda12x
 scipy
 matplotlib
 pandas
